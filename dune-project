@@ -2,7 +2,7 @@
 (name hsplay)
 (generate_opam_files true)
 
-(license "None")
+(license "MIT")
 (authors "John Hester")
 (maintainers "John Hester")
 
@@ -18,5 +18,4 @@
   (containers-data (>= 3.0))
   (dune (>= 2.0))
   (zarith (>= 1.9.1))
-  (imandra-base (>= 1.1.0))
   (ocamlgraph (>= 2.0.0))))
