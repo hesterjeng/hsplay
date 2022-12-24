@@ -1,0 +1,22 @@
+(lang dune 2.2)
+(name hsplay)
+(generate_opam_files true)
+
+(license "None")
+(authors "John Hester")
+(maintainers "John Hester")
+
+(version 1.5.1)
+
+(package
+ (name hsplay)
+ (synopsis "ocaml splay tree implementation")
+ (description "")
+ (depends
+  ppx_deriving
+  (containers (>= 3.0))
+  (containers-data (>= 3.0))
+  (dune (>= 2.0))
+  (zarith (>= 1.9.1))
+  (imandra-base (>= 1.1.0))
+  (ocamlgraph (>= 2.0.0))))

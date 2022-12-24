@@ -1,0 +1,11 @@
+(library
+ (name hsplay)
+ (public_name hsplay)
+ (preprocess
+  (pps ppx_deriving.std))
+ (libraries containers containers-data zarith ocamlgraph))
+
+(env
+ (dev
+  (flags
+   (:standard -w +a-4-44-42-48-66@8))))
