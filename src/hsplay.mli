@@ -12,8 +12,8 @@ module type S = sig
   (** The type of splay trees. *)
 
   val create : unit -> t
-
-  (* val insert : t -> elt -> unit *)
+  val insert : t -> elt -> unit
+  val mem : t -> elt -> bool
 end
 
 module Make (Ord : OrderedType) : S with type elt = Ord.t

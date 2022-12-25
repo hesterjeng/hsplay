@@ -9,8 +9,8 @@ module type S = sig
   type t
 
   val create : unit -> t
-
-  (* val insert : t -> elt -> unit *)
+  val insert : t -> elt -> unit
+  val mem : t -> elt -> bool
 end
 
 module Make (Ord : OrderedType) = struct
@@ -28,7 +28,6 @@ module Make (Ord : OrderedType) = struct
   and t = cell option ref
 
   let create () : t = ref None
-  let _splay _tree _elt = ()
   let is_root ({ parent; _ } : cell) = parent = None
   let is_left_child_of child parent = parent.left = Some child
   let is_right_child_of child parent = parent.right = Some child
@@ -181,32 +180,31 @@ module Make (Ord : OrderedType) = struct
       | Some rchild -> add_ ~root rchild x
     )
 
-  let add_top (root : t) (x : elt) : unit =
+  let insert (root : t) (x : elt) : unit =
     match !root with
     | None ->
       root := Some { key = x; parent = None; left = None; right = None };
       ()
-    | Some ({ key; parent = _; left; right } as current) ->
-      let comparison = Ord.compare x key in
-      if comparison = 0 then
-        ()
-      else if comparison < 0 then (
-        match left with
-        | None ->
-          let new_left_child =
-            { key = x; parent = Some current; left = None; right = None }
-          in
-          set_left_child_of (Some new_left_child) current;
-          splay ~root new_left_child
-        | Some lchild -> add_ ~root lchild x
-      ) else if comparison > 0 then (
-        match right with
-        | None ->
-          let new_right_child =
-            { key = x; parent = Some current; left = None; right = None }
-          in
-          set_left_child_of (Some new_right_child) current;
-          splay ~root new_right_child
-        | Some rchild -> add_ ~root rchild x
-      )
+    | Some current -> add_ ~root current x
+
+  let rec mem_ ~(root : t) (current : cell) (x : elt) : bool =
+    let { key; left; right; _ } = current in
+    let comparison = Ord.compare x key in
+    if comparison = 0 then (
+      splay ~root current;
+      true
+    ) else if comparison < 0 then (
+      match left with
+      | None -> false
+      | Some lchild -> mem_ ~root lchild x
+    ) else (
+      match right with
+      | None -> false
+      | Some lchild -> mem_ ~root lchild x
+    )
+
+  let mem (root : t) (x : elt) =
+    match !root with
+    | None -> false
+    | Some current -> mem_ ~root current x
 end
