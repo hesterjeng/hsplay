@@ -49,30 +49,6 @@ module Make (Ord : OrderedType) = struct
 
   let set_root ~(root : t) (x : cell) = root := Some x
 
-  (* let zig ~(root : t) (x : cell) = *)
-  (*   match x.parent with *)
-  (*   | None -> invalid_arg "cell is root, cannot zig" *)
-  (*   | Some p -> *)
-  (*       assert (is_root p); *)
-  (*       x.parent <- None; *)
-  (*       p.parent <- Some x; *)
-  (*       if (p.left = Some x) then *)
-  (*         ( *)
-  (*         (\* zig left? *\) *)
-  (*         set_left_child_of x.right p; *)
-  (*         set_right_child_of (Some p) x; *)
-  (*         set_root ~root x *)
-  (*         ) *)
-  (*       else if (p.right = Some x) then *)
-  (*         ( *)
-  (*         (\* zig right? *\) *)
-  (*         set_right_child_of x.left p; *)
-  (*         set_left_child_of (Some p) x; *)
-  (*         set_root ~root x *)
-  (*         ) *)
-  (*       else *)
-  (*         invalid_arg "x is not a child of its parent..." *)
-
   let zig_left ~(root : t) ~(parent : cell) (x : cell) =
     assert (is_root parent);
     x.parent <- None;
@@ -111,34 +87,6 @@ module Make (Ord : OrderedType) = struct
       else
         invalid_arg "could not find grandparent as child of great_grandparent"
 
-  (* let zig_zig ~(root : t) (x : cell) = *)
-  (*   match x.parent with *)
-  (*   | None -> invalid_arg "cell is root, cannot zig_zig" *)
-  (*   | Some parent -> *)
-  (*     match parent.parent with *)
-  (*     | None -> invalid_arg "cannot zig_zig, parent is root" *)
-  (*     | Some grandparent -> *)
-  (*       if (is_left_child_of parent grandparent && is_left_child_of x parent) then *)
-  (*         ( *)
-  (*         (\* left zig zig *\) *)
-  (*         set_left_child_of x.right parent; *)
-  (*         set_right_child_of (Some parent) x; *)
-  (*         set_left_child_of (parent.right) grandparent; *)
-  (*         set_right_child_of (Some grandparent) parent; *)
-  (*         update_great_grandparent x grandparent *)
-  (*         ) *)
-  (*       else if (is_right_child_of parent grandparent && is_right_child_of x parent) then *)
-  (*         ( *)
-  (*         (\* right zig zig *\) *)
-  (*         set_right_child_of (x.left) parent; *)
-  (*         set_left_child_of (Some parent)  x; *)
-  (*         set_right_child_of (parent.left)  grandparent; *)
-  (*         set_left_child_of (Some grandparent) parent; *)
-  (*         update_great_grandparent x grandparent *)
-  (*         ) *)
-  (*       else *)
-  (*         invalid_arg "cannot_zig_zig" *)
-
   let left_zig_zig ~(root : t) ~(parent : cell) ~(grandparent : cell) (x : cell)
       : unit =
     set_left_child_of x.right parent;
@@ -154,34 +102,6 @@ module Make (Ord : OrderedType) = struct
     set_right_child_of parent.left grandparent;
     set_left_child_of (Some grandparent) parent;
     update_great_grandparent ~root x grandparent
-
-  (* let zig_zag ~(root : t) (x : cell) = *)
-  (*   match x.parent with *)
-  (*   | None -> invalid_arg "cell is root, cannot zig_zag" *)
-  (*   | Some parent -> *)
-  (*     match parent.parent with *)
-  (*     | None -> invalid_arg "cannot zig_zag, parent is root" *)
-  (*     | Some grandparent -> *)
-  (*       if (is_left_child_of parent grandparent && is_right_child_of x parent) then *)
-  (*         ( *)
-  (*         (\* left zig zag *\) *)
-  (*         set_right_child_of (x.left) parent; *)
-  (*         set_left_child_of (x.right)  grandparent; *)
-  (*         set_left_child_of (Some parent) x; *)
-  (*         set_right_child_of (Some grandparent) x; *)
-  (*         update_great_grandparent x grandparent *)
-  (*         ) *)
-  (*       else if (is_right_child_of parent grandparent && is_left_child_of x parent) then *)
-  (*         ( *)
-  (*         (\* right zig zag *\) *)
-  (*         set_right_child_of (x.left) parent; *)
-  (*         set_left_child_of (x.right) grandparent; *)
-  (*         set_left_child_of (Some parent) x; *)
-  (*         set_right_child_of (Some grandparent) x; *)
-  (*         update_great_grandparent x grandparent *)
-  (*         ) *)
-  (*       else *)
-  (*         invalid_arg "cannot zig zag" *)
 
   let left_zig_zag ~(root : t) ~(parent : cell) ~(grandparent : cell) (x : cell)
       : unit =
@@ -236,17 +156,44 @@ module Make (Ord : OrderedType) = struct
       ()
     done
 
-  (* let rec insert_ (tree : t) (x : elt) : unit = *)
-  (*   match !tree with *)
-  (*   | None -> tree := Some {key = x; parent = None; left = None; right = None}; () *)
-  (*   | Some {key; parent = _; left; right} -> *)
-  (*     let comparison = Ord.compare x key in *)
-  (*     if comparison = 0 then () else *)
-  (*     if comparison < 0 then *)
-  (*       ( *)
-  (*         insert_ left x; *)
-  (*       ) else *)
-  (*     ( *)
-  (*       insert_ right x; *)
-  (*     ) *)
+  let rec add_ ~(root : t) (current : cell) (x : elt) : unit =
+    let {key; parent; left; right} = current in
+    let comparison = Ord.compare x key in
+    if comparison = 0 then splay ~root current
+    else if comparison < 0 then
+        match left with
+        | None ->
+          let new_left_child = {key = x; parent = Some current; left = None; right = None} in
+          set_left_child_of (Some new_left_child) current;
+          splay ~root new_left_child
+        | Some lchild -> add_ ~root lchild x
+    else if comparison > 0 then
+        match right with
+        | None ->
+          let new_right_child = {key = x; parent = Some current; left = None; right = None} in
+          set_left_child_of (Some new_right_child) current;
+          splay ~root new_right_child
+        | Some rchild -> add_ ~root rchild x
+
+  let add_top (root : t) (x : elt) : unit =
+    match !root with
+    | None -> root := Some {key = x; parent = None; left = None; right = None}; ()
+    | Some ({key; parent = _; left; right} as current) ->
+      let comparison = Ord.compare x key in
+      if comparison = 0 then () else
+      if comparison < 0 then
+        match left with
+        | None ->
+          let new_left_child = {key = x; parent = Some current; left = None; right = None} in
+          set_left_child_of (Some new_left_child) current;
+          splay ~root new_left_child
+        | Some lchild -> add_ ~root lchild x
+      else if comparison > 0 then
+        match right with
+        | None ->
+          let new_right_child = {key = x; parent = Some current; left = None; right = None} in
+          set_left_child_of (Some new_right_child) current;
+          splay ~root new_right_child
+        | Some rchild -> add_ ~root rchild x
+
 end
