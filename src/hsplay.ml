@@ -12,14 +12,14 @@ module type S = sig
     (** The type of splay trees. *)
     val create : unit -> t
 
-    val insert : t -> elt -> unit
+    (* val insert : t -> elt -> unit *)
 end
 
 module Make (Ord : OrderedType) =
   struct
     type elt = Ord.t
 
-    let equal_elt x y = Ord.compare x y = 0
+    (* let equal_elt x y = Ord.compare x y = 0 *)
 
     type cell =
         {
@@ -30,7 +30,7 @@ module Make (Ord : OrderedType) =
           mutable right : cell option;
         }
 
-    and t = cell option ref [@@deriving eq]
+    and t = cell option ref
 
     let create () : t = ref None
 
@@ -152,7 +152,7 @@ module Make (Ord : OrderedType) =
           else
             raise Cannot_zig_zag
 
-    let splay x =
+    let _splay x =
       while (x.parent <> None) do
         (
           try zig_zag x with

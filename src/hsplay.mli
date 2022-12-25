@@ -13,7 +13,7 @@ module type S = sig
 
   val create : unit -> t
 
-  val insert : t -> elt -> unit
+  (* val insert : t -> elt -> unit *)
 end
 
 module Make (Ord : OrderedType) : S with type elt = Ord.t
