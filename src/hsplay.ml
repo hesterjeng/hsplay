@@ -157,43 +157,56 @@ module Make (Ord : OrderedType) = struct
     done
 
   let rec add_ ~(root : t) (current : cell) (x : elt) : unit =
-    let {key; parent; left; right} = current in
+    let { key; parent; left; right } = current in
     let comparison = Ord.compare x key in
-    if comparison = 0 then splay ~root current
-    else if comparison < 0 then
-        match left with
-        | None ->
-          let new_left_child = {key = x; parent = Some current; left = None; right = None} in
-          set_left_child_of (Some new_left_child) current;
-          splay ~root new_left_child
-        | Some lchild -> add_ ~root lchild x
-    else if comparison > 0 then
-        match right with
-        | None ->
-          let new_right_child = {key = x; parent = Some current; left = None; right = None} in
-          set_left_child_of (Some new_right_child) current;
-          splay ~root new_right_child
-        | Some rchild -> add_ ~root rchild x
+    if comparison = 0 then
+      splay ~root current
+    else if comparison < 0 then (
+      match left with
+      | None ->
+        let new_left_child =
+          { key = x; parent = Some current; left = None; right = None }
+        in
+        set_left_child_of (Some new_left_child) current;
+        splay ~root new_left_child
+      | Some lchild -> add_ ~root lchild x
+    ) else if comparison > 0 then (
+      match right with
+      | None ->
+        let new_right_child =
+          { key = x; parent = Some current; left = None; right = None }
+        in
+        set_left_child_of (Some new_right_child) current;
+        splay ~root new_right_child
+      | Some rchild -> add_ ~root rchild x
+    )
 
   let add_top (root : t) (x : elt) : unit =
     match !root with
-    | None -> root := Some {key = x; parent = None; left = None; right = None}; ()
-    | Some ({key; parent = _; left; right} as current) ->
+    | None ->
+      root := Some { key = x; parent = None; left = None; right = None };
+      ()
+    | Some ({ key; parent = _; left; right } as current) ->
       let comparison = Ord.compare x key in
-      if comparison = 0 then () else
-      if comparison < 0 then
+      if comparison = 0 then
+        ()
+      else if comparison < 0 then (
         match left with
         | None ->
-          let new_left_child = {key = x; parent = Some current; left = None; right = None} in
+          let new_left_child =
+            { key = x; parent = Some current; left = None; right = None }
+          in
           set_left_child_of (Some new_left_child) current;
           splay ~root new_left_child
         | Some lchild -> add_ ~root lchild x
-      else if comparison > 0 then
+      ) else if comparison > 0 then (
         match right with
         | None ->
-          let new_right_child = {key = x; parent = Some current; left = None; right = None} in
+          let new_right_child =
+            { key = x; parent = Some current; left = None; right = None }
+          in
           set_left_child_of (Some new_right_child) current;
           splay ~root new_right_child
         | Some rchild -> add_ ~root rchild x
-
+      )
 end
