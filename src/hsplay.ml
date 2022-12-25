@@ -46,7 +46,9 @@ module Make (Ord : OrderedType) = struct
       parent.left <- child;
       child_cell.parent <- Some parent
 
-  let set_root ~(root : t) (x : cell) = root := Some x
+  let set_root ~(root : t) (x : cell) =
+    assert (x.parent = None);
+    root := Some x
 
   let zig_left ~(root : t) ~(parent : cell) (x : cell) =
     assert (is_root parent);
@@ -65,11 +67,13 @@ module Make (Ord : OrderedType) = struct
     set_root ~root x
 
   let zig ~(root : t) ~(parent : cell) (x : cell) =
-    if parent.left = Some x then
+    if parent.left = Some x then (
+      CCFormat.printf "@[zig left@]@.";
       zig_left ~root ~parent x
-    else if parent.right = Some x then
+    ) else if parent.right = Some x then (
+      CCFormat.printf "@[zig right@]@.";
       zig_right ~root ~parent x
-    else
+    ) else
       invalid_arg "cannot zig, x is not a child of its parent"
 
   (* update the great grandparent to point to x *)
@@ -130,21 +134,25 @@ module Make (Ord : OrderedType) = struct
         Continue
       | Some grandparent ->
         if is_left_child_of parent grandparent && is_left_child_of x parent then (
+          CCFormat.printf "@[left zig zig@]@.";
           left_zig_zig ~root ~parent ~grandparent x;
           Continue
         ) else if
             is_right_child_of parent grandparent && is_right_child_of x parent
           then (
+          CCFormat.printf "@[right zig zig@]@.";
           right_zig_zig ~root ~parent ~grandparent x;
           Continue
         ) else if
             is_left_child_of parent grandparent && is_right_child_of x parent
           then (
+          CCFormat.printf "@[left zig zag@]@.";
           left_zig_zag ~root ~parent ~grandparent x;
           Continue
         ) else if
             is_right_child_of parent grandparent && is_left_child_of x parent
           then (
+          CCFormat.printf "@[right zig zag@]@.";
           right_zig_zag ~root ~parent ~grandparent x;
           Continue
         ) else
