@@ -1,16 +1,22 @@
 module type OrderedType = sig
   type t
 
+  val equals : t -> t -> bool
+
   val compare : t -> t -> int
+  val pp : t CCFormat.printer
 end
 
 module type S = sig
   type elt
   type t
 
+  val equals : t -> t -> bool
+
   val create : unit -> t
   val insert : t -> elt -> unit
   val mem : t -> elt -> bool
+  val pp : t CCFormat.printer
 end
 
 module Make (Ord : OrderedType) = struct
@@ -26,6 +32,8 @@ module Make (Ord : OrderedType) = struct
   }
 
   and t = cell option ref
+
+  let equals x y = !x = !y
 
   let create () : t = ref None
   let is_root ({ parent; _ } : cell) = parent = None
@@ -57,6 +65,8 @@ module Make (Ord : OrderedType) = struct
     set_left_child_of x.right parent;
     set_right_child_of (Some parent) x;
     set_root ~root x;
+    CCFormat.printf "@[zig left done@]@.";
+      CCFormat.flush CCFormat.stdout ();
     assert (is_root x)
 
   let zig_right ~(root : t) ~(parent : cell) (x : cell) =
@@ -66,15 +76,18 @@ module Make (Ord : OrderedType) = struct
     set_right_child_of x.left parent;
     set_left_child_of (Some parent) x;
     set_root ~root x;
+    CCFormat.printf "@[zig right done@]@.";
+      CCFormat.flush CCFormat.stdout ();
     assert (is_root x)
 
   let zig ~(root : t) ~(parent : cell) (x : cell) =
-    CCFormat.printf "@[zig@]@.";
     if parent.left = Some x then (
       CCFormat.printf "@[zig left@]@.";
+      CCFormat.flush CCFormat.stdout ();
       zig_left ~root ~parent x
     ) else if parent.right = Some x then (
       CCFormat.printf "@[zig right@]@.";
+      CCFormat.flush CCFormat.stdout ();
       zig_right ~root ~parent x
     ) else
       invalid_arg "cannot zig, x is not a child of its parent"
