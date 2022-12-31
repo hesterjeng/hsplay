@@ -15,6 +15,7 @@
  (depends
   ppx_deriving
   (containers (>= 3.0))
+  (alcotest :with-test)
   (containers-data (>= 3.0))
   (dune (>= 2.0))
   (zarith (>= 1.9.1))
