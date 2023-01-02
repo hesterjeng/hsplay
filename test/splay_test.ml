@@ -1,1 +1,1 @@
-let basic_splay = [ ("init", `Quick, (fun _ -> ())) ]
+let init_test = [ ("init", `Quick, (fun _ -> ())) ]

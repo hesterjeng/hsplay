@@ -241,5 +241,13 @@ module Make (Ord : OrderedType) = struct
     | None -> false
     | Some current -> mem_ ~root current x
 
-  let pp : t CCFormat.printer = CCFormat.silent
+  let rec pp_cell fmt (x : cell) =
+    CCFormat.fprintf fmt "@[cell content: %a@]@." Ord.pp x.key;
+    CCFormat.fprintf fmt "@[left: %a@]@." (CCOption.pp pp_cell) x.left;
+    CCFormat.fprintf fmt "@[right: %a@]@." (CCOption.pp pp_cell) x.right
+
+  let pp fmt x =
+    match !x with
+    | Some cell -> CCFormat.fprintf fmt "@[%a@]@." pp_cell cell
+    | None -> CCFormat.fprintf fmt "@[no splay tree@]@."
 end
