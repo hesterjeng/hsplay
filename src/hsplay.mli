@@ -1,7 +1,6 @@
 module type OrderedType = sig
   type t
 
-  val equals : t -> t -> bool
   val compare : t -> t -> int
   val pp : t CCFormat.printer
 end
