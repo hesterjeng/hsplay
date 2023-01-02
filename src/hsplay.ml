@@ -2,7 +2,6 @@ module type OrderedType = sig
   type t
 
   val equals : t -> t -> bool
-
   val compare : t -> t -> int
   val pp : t CCFormat.printer
 end
@@ -12,7 +11,6 @@ module type S = sig
   type t
 
   val equals : t -> t -> bool
-
   val create : unit -> t
   val insert : t -> elt -> unit
   val mem : t -> elt -> bool
@@ -34,7 +32,6 @@ module Make (Ord : OrderedType) = struct
   and t = cell option ref
 
   let equals x y = !x = !y
-
   let create () : t = ref None
   let is_root ({ parent; _ } : cell) = parent = None
   let is_left_child_of child parent = parent.left = Some child
@@ -66,7 +63,7 @@ module Make (Ord : OrderedType) = struct
     set_right_child_of (Some parent) x;
     set_root ~root x;
     CCFormat.printf "@[zig left done@]@.";
-      CCFormat.flush CCFormat.stdout ();
+    CCFormat.flush CCFormat.stdout ();
     assert (is_root x)
 
   let zig_right ~(root : t) ~(parent : cell) (x : cell) =
@@ -77,7 +74,7 @@ module Make (Ord : OrderedType) = struct
     set_left_child_of (Some parent) x;
     set_root ~root x;
     CCFormat.printf "@[zig right done@]@.";
-      CCFormat.flush CCFormat.stdout ();
+    CCFormat.flush CCFormat.stdout ();
     assert (is_root x)
 
   let zig ~(root : t) ~(parent : cell) (x : cell) =
@@ -243,4 +240,6 @@ module Make (Ord : OrderedType) = struct
     match !root with
     | None -> false
     | Some current -> mem_ ~root current x
+
+  let pp : t CCFormat.printer = CCFormat.silent
 end

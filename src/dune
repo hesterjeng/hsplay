@@ -3,7 +3,7 @@
  (public_name hsplay)
  (preprocess
   (pps ppx_deriving.std))
- (libraries containers containers-data zarith ocamlgraph))
+ (libraries containers containers-data zarith ocamlgraph alcotest))
 
 (env
  (dev
