@@ -40,7 +40,6 @@ module Make (Ord : OrderedType) = struct
       && CCOption.equal equals x.right y.right
 
     let equals_opt = CCOption.equal equals
-
   end
 
   (* This is opened early so that equals is overloaded below, *)
@@ -208,9 +207,10 @@ module Make (Ord : OrderedType) = struct
     CCFormat.printf "@[add@]@.";
     let { key; parent; left; right } = current in
     let comparison = Ord.compare x key in
-    if CCInt.equal comparison 0 then
+    if CCInt.equal comparison 0 then (
+      CCFormat.printf "@[found inserted key@]@.";
       splay ~root current
-    else if comparison < 0 then (
+    ) else if comparison < 0 then (
       match left with
       | None ->
         CCFormat.printf "@[lt none@]@.";
