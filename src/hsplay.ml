@@ -35,9 +35,11 @@ module Make (Ord : OrderedType) = struct
     (* does not inspect the parent, because this would cause *)
     (* recursion errors during equality comparison. *)
     let rec equals x y =
-      Ord.compare x.key y.key = 0
+      CCInt.equal (Ord.compare x.key y.key) 0
       && CCOption.equal equals x.left y.left
       && CCOption.equal equals x.right y.right
+
+    let equals_opt = CCOption.equal equals
 
   end
 
@@ -49,9 +51,9 @@ module Make (Ord : OrderedType) = struct
 
   let equals x y = !x = !y
   let create () : t = ref None
-  let is_root ({ parent; _ } : Cell.t) = parent = None
-  let is_left_child_of child parent = parent.left = Some child
-  let is_right_child_of child parent = parent.right = Some child
+  let is_root ({ parent; _ } : Cell.t) = Cell.equals_opt parent None
+  let is_left_child_of child parent = Cell.equals_opt parent.left (Some child)
+  let is_right_child_of child parent = Cell.equals_opt parent.right (Some child)
 
   let set_right_child_of (child : Cell.t option) (parent : Cell.t) =
     match child with
@@ -68,7 +70,7 @@ module Make (Ord : OrderedType) = struct
       child_cell.parent <- Some parent
 
   let set_root ~(root : t) (x : Cell.t) =
-    assert (x.parent = None);
+    assert (Cell.equals_opt x.parent None);
     root := Some x
 
   let zig_left ~(root : t) ~(parent : Cell.t) (x : Cell.t) =
@@ -80,7 +82,7 @@ module Make (Ord : OrderedType) = struct
     set_root ~root x;
     CCFormat.printf "@[zig left done@]@.";
     CCFormat.flush CCFormat.stdout ();
-    assert (x.parent <> Some x);
+    assert (Cell.equals_opt x.parent (Some x));
     assert (is_root x)
 
   let zig_right ~(root : t) ~(parent : Cell.t) (x : Cell.t) =
@@ -95,11 +97,11 @@ module Make (Ord : OrderedType) = struct
     assert (is_root x)
 
   let zig ~(root : t) ~(parent : Cell.t) (x : Cell.t) =
-    if parent.left = Some x then (
+    if Cell.equals_opt parent.left (Some x) then (
       CCFormat.printf "@[zig left@]@.";
       CCFormat.flush CCFormat.stdout ();
       zig_left ~root ~parent x
-    ) else if parent.right = Some x then (
+    ) else if Cell.equals_opt parent.right (Some x) then (
       CCFormat.printf "@[zig right@]@.";
       CCFormat.flush CCFormat.stdout ();
       zig_right ~root ~parent x
@@ -113,9 +115,9 @@ module Make (Ord : OrderedType) = struct
       x.parent <- None;
       set_root ~root x
     | Some great_grandparent ->
-      if great_grandparent.left = Some grandparent then
+      if Cell.equals_opt great_grandparent.left (Some grandparent) then
         set_left_child_of (Some x) great_grandparent
-      else if great_grandparent.right = Some grandparent then
+      else if Cell.equals_opt great_grandparent.right (Some grandparent) then
         set_right_child_of (Some x) great_grandparent
       else
         invalid_arg "could not find grandparent as child of great_grandparent"
@@ -207,7 +209,7 @@ module Make (Ord : OrderedType) = struct
     CCFormat.printf "@[add@]@.";
     let { key; parent; left; right } = current in
     let comparison = Ord.compare x key in
-    if comparison = 0 then
+    if CCInt.equal comparison 0 then
       splay ~root current
     else if comparison < 0 then (
       match left with
@@ -244,7 +246,7 @@ module Make (Ord : OrderedType) = struct
     CCFormat.printf "@[mem@]@.";
     let { key; left; right; _ } = current in
     let comparison = Ord.compare x key in
-    if comparison = 0 then (
+    if CCInt.equal comparison 0 then (
       splay ~root current;
       true
     ) else if comparison < 0 then (
