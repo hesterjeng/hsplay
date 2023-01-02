@@ -1,3 +1,5 @@
+open Disable_polymorphism
+
 module type OrderedType = sig
   type t
 
@@ -36,6 +38,7 @@ module Make (Ord : OrderedType) = struct
       Ord.compare x.key y.key = 0
       && CCOption.equal equals x.left y.left
       && CCOption.equal equals x.right y.right
+
   end
 
   (* This is opened early so that equals is overloaded below, *)
