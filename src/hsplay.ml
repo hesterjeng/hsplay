@@ -1,4 +1,4 @@
-open Disable_polymorphism
+open! Disable_polymorphism
 
 module type OrderedType = sig
   type t
@@ -49,7 +49,7 @@ module Make (Ord : OrderedType) = struct
 
   type t = Cell.t option ref
 
-  let equals x y = !x = !y
+  let equals x y = equals_opt !x !y
   let create () : t = ref None
   let is_root ({ parent; _ } : Cell.t) = Cell.equals_opt parent None
   let is_left_child_of child parent = Cell.equals_opt parent.left (Some child)
@@ -82,7 +82,6 @@ module Make (Ord : OrderedType) = struct
     set_root ~root x;
     CCFormat.printf "@[zig left done@]@.";
     CCFormat.flush CCFormat.stdout ();
-    assert (Cell.equals_opt x.parent (Some x));
     assert (is_root x)
 
   let zig_right ~(root : t) ~(parent : Cell.t) (x : Cell.t) =
