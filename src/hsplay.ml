@@ -41,6 +41,11 @@ module Make (Ord : OrderedType) = struct
       && CCOption.equal equals x.right y.right
 
     let equals_opt = CCOption.equal equals
+
+    let rec pp_cell fmt (x : t) =
+      CCFormat.fprintf fmt "@[cell content... %a@]@." Ord.pp x.key;
+      CCFormat.fprintf fmt "@[left: %a@]@." (CCOption.pp pp_cell) x.left;
+      CCFormat.fprintf fmt "@[right: %a@]@." (CCOption.pp pp_cell) x.right
   end
 
   (* This is opened early so that equals is overloaded below, *)
@@ -54,6 +59,11 @@ module Make (Ord : OrderedType) = struct
   let is_root ({ parent; _ } : Cell.t) = Cell.equals_opt parent None
   let is_left_child_of child parent = Cell.equals_opt parent.left (Some child)
   let is_right_child_of child parent = Cell.equals_opt parent.right (Some child)
+
+  let pp fmt x =
+    match !x with
+    | Some cell -> CCFormat.fprintf fmt "@[%a@]@." pp_cell cell
+    | None -> CCFormat.fprintf fmt "@[no splay tree@]@."
 
   let set_right_child_of (child : Cell.t option) (parent : Cell.t) =
     match child with
@@ -111,15 +121,20 @@ module Make (Ord : OrderedType) = struct
   let update_great_grandparent ~(root : t) x grandparent =
     match grandparent.parent with
     | None ->
+      CCFormat.printf "@[none in update great grandparent@]@.";
       x.parent <- None;
       set_root ~root x
     | Some great_grandparent ->
-      if Cell.equals_opt great_grandparent.left (Some grandparent) then
+      CCFormat.printf "@[some in update great grandparent@]@.";
+      if Cell.equals_opt great_grandparent.left (Some grandparent) then (
+        CCFormat.printf "@[grandparent is left of great@]@.";
         set_left_child_of (Some x) great_grandparent
-      else if Cell.equals_opt great_grandparent.right (Some grandparent) then
+      ) else if Cell.equals_opt great_grandparent.right (Some grandparent) then (
+        CCFormat.printf "@[grandparent is right of great@]@.";
         set_right_child_of (Some x) great_grandparent
-      else
-        invalid_arg "could not find grandparent as child of great_grandparent"
+      ) else
+        CCFormat.printf "@[could not find grandparent as child of great@]@.";
+      invalid_arg "could not find grandparent as child of great_grandparent"
 
   let left_zig_zig ~(root : t) ~(parent : Cell.t) ~(grandparent : Cell.t)
       (x : Cell.t) : unit =
@@ -147,11 +162,18 @@ module Make (Ord : OrderedType) = struct
 
   let right_zig_zag ~(root : t) ~(parent : Cell.t) ~(grandparent : Cell.t)
       (x : Cell.t) : unit =
+    CCFormat.printf "@[%a@]" pp root;
+    CCFormat.printf "@[1@]@.";
     set_right_child_of x.left parent;
+    CCFormat.printf "@[2@]@.";
     set_left_child_of x.right grandparent;
+    CCFormat.printf "@[3@]@.";
     set_left_child_of (Some parent) x;
+    CCFormat.printf "@[4@]@.";
     set_right_child_of (Some grandparent) x;
-    update_great_grandparent ~root x grandparent
+    CCFormat.printf "@[5@]@.";
+    update_great_grandparent ~root x grandparent;
+    CCFormat.printf "@[6@]@."
 
   module Splay_result = struct
     type t = Done | Continue [@@deriving show, eq]
@@ -192,6 +214,7 @@ module Make (Ord : OrderedType) = struct
           then (
           CCFormat.printf "@[right zig zag@]@.";
           right_zig_zag ~root ~parent ~grandparent x;
+          CCFormat.printf "@[continuing@]@.";
           Splay_result.Continue
         ) else
           invalid_arg "cannot splay, malformed tree")
@@ -262,16 +285,6 @@ module Make (Ord : OrderedType) = struct
     match !root with
     | None -> false
     | Some current -> mem_ ~root current x
-
-  let rec pp_cell fmt (x : Cell.t) =
-    CCFormat.fprintf fmt "@[cell content... %a@]@." Ord.pp x.key;
-    CCFormat.fprintf fmt "@[left: %a@]@." (CCOption.pp pp_cell) x.left;
-    CCFormat.fprintf fmt "@[right: %a@]@." (CCOption.pp pp_cell) x.right
-
-  let pp fmt x =
-    match !x with
-    | Some cell -> CCFormat.fprintf fmt "@[%a@]@." pp_cell cell
-    | None -> CCFormat.fprintf fmt "@[no splay tree@]@."
 
   module Invariants = struct
     let rec only_in_tree_once__ count elt cell : bool =
