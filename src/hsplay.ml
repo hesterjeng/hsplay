@@ -48,6 +48,35 @@ module Make (Ord : OrderedType) = struct
 
   type t = Cell.t option ref
 
+  module Invariants = struct
+    let rec only_in_tree_once__ count elt cell : bool =
+      let recurse cell =
+        match cell.left, cell.right with
+        | Some left, Some right ->
+          only_in_tree_once__ count elt left
+          && only_in_tree_once__ count elt right
+        | Some left, None -> only_in_tree_once__ count elt left
+        | None, Some right -> only_in_tree_once__ count elt right
+        | None, None -> true
+      in
+      if CCInt.equal (Ord.compare elt cell.key) 0 then
+        if CCInt.equal !count 1 then
+          false
+        else (
+          count := 1;
+          recurse cell
+        )
+      else
+        recurse cell
+
+    let only_in_tree_once_ elt cell = only_in_tree_once__ (ref 0) elt cell
+
+    let only_in_tree_once elt tree =
+      match !tree with
+      | Some root -> only_in_tree_once_ elt root
+      | None -> true
+  end
+
   let equals x y = equals_opt !x !y
   let create () : t = ref None
   let is_root ({ parent; _ } : Cell.t) = Cell.equals_opt parent None
