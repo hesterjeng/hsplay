@@ -43,7 +43,13 @@ module Make (Ord : OrderedType) = struct
     let equals_opt = CCOption.equal equals
 
     let rec pp_cell fmt (x : t) =
-      CCFormat.fprintf fmt "@[cell content... %a@]@." Ord.pp x.key;
+      let parent_key =
+        match x.parent with
+        | Some p -> Some p.key
+        | None -> None
+      in
+      CCFormat.fprintf fmt "@[cell content... %a... parent is %a@]@." Ord.pp
+        x.key (CCOption.pp Ord.pp) parent_key;
       CCFormat.fprintf fmt "@[left: %a@]@." (CCOption.pp pp_cell) x.left;
       CCFormat.fprintf fmt "@[right: %a@]@." (CCOption.pp pp_cell) x.right
   end
@@ -132,9 +138,10 @@ module Make (Ord : OrderedType) = struct
       ) else if Cell.equals_opt great_grandparent.right (Some grandparent) then (
         CCFormat.printf "@[grandparent is right of great@]@.";
         set_right_child_of (Some x) great_grandparent
-      ) else
+      ) else (
         CCFormat.printf "@[could not find grandparent as child of great@]@.";
-      invalid_arg "could not find grandparent as child of great_grandparent"
+        invalid_arg "could not find grandparent as child of great_grandparent"
+      )
 
   let left_zig_zig ~(root : t) ~(parent : Cell.t) ~(grandparent : Cell.t)
       (x : Cell.t) : unit =
@@ -180,6 +187,8 @@ module Make (Ord : OrderedType) = struct
   end
 
   let splay_once ~(root : t) (x : Cell.t) : Splay_result.t =
+    let maybe_finished x =
+      if is_root x then Splay_result.Done else Splay_result.Continue in
     CCFormat.printf "@[splay once@]@.";
     match x.parent with
     | None ->
@@ -196,26 +205,26 @@ module Make (Ord : OrderedType) = struct
         if is_left_child_of parent grandparent && is_left_child_of x parent then (
           CCFormat.printf "@[left zig zig@]@.";
           left_zig_zig ~root ~parent ~grandparent x;
-          Splay_result.Continue
+          maybe_finished x
         ) else if
             is_right_child_of parent grandparent && is_right_child_of x parent
           then (
           CCFormat.printf "@[right zig zig@]@.";
           right_zig_zig ~root ~parent ~grandparent x;
-          Splay_result.Continue
+          maybe_finished x
         ) else if
             is_left_child_of parent grandparent && is_right_child_of x parent
           then (
           CCFormat.printf "@[left zig zag@]@.";
           left_zig_zag ~root ~parent ~grandparent x;
-          Splay_result.Continue
+          maybe_finished x
         ) else if
             is_right_child_of parent grandparent && is_left_child_of x parent
           then (
           CCFormat.printf "@[right zig zag@]@.";
           right_zig_zag ~root ~parent ~grandparent x;
           CCFormat.printf "@[continuing@]@.";
-          Splay_result.Continue
+          maybe_finished x
         ) else
           invalid_arg "cannot splay, malformed tree")
 
@@ -227,7 +236,7 @@ module Make (Ord : OrderedType) = struct
     done
 
   let rec add_ ~(root : t) (current : Cell.t) (x : elt) : unit =
-    CCFormat.printf "@[add@]@.";
+    CCFormat.printf "@[add %a@]@." Ord.pp x;
     let { key; parent; left; right } = current in
     let comparison = Ord.compare x key in
     if CCInt.equal comparison 0 then (
@@ -250,7 +259,7 @@ module Make (Ord : OrderedType) = struct
         let new_right_child =
           { key = x; parent = Some current; left = None; right = None }
         in
-        set_left_child_of (Some new_right_child) current;
+        set_right_child_of (Some new_right_child) current;
         splay ~root new_right_child
       | Some rchild -> add_ ~root rchild x
     )
@@ -308,10 +317,17 @@ module Make (Ord : OrderedType) = struct
         recurse cell
 
     let only_in_tree_once_ elt cell = only_in_tree_once__ (ref 0) elt cell
+
+    (* let is_balanced_ cell = *)
+    (*   match cell with *)
+    (*   | None -> true *)
+    (*   | Some {key; left; right; _} -> *)
   end
 
   let only_in_tree_once elt tree =
     match !tree with
     | Some root -> Invariants.only_in_tree_once_ elt root
     | None -> true
+
+  (* let is_balanced tree = *)
 end
