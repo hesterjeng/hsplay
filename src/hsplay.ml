@@ -22,8 +22,6 @@ end
 module Make (Ord : OrderedType) = struct
   type elt = Ord.t
 
-  (* let equal_elt x y = Ord.compare x y = 0 *)
-
   module Cell = struct
     type t = {
       mutable key: elt;
@@ -167,13 +165,6 @@ module Make (Ord : OrderedType) = struct
     set_left_child_of (Some parent) x;
     set_right_child_of (Some grandparent) x
 
-  (* let right_zig_zag ~(root : t) ~(parent : Cell.t) ~(grandparent : Cell.t) *)
-  (*     (x : Cell.t) : unit = *)
-  (*   update_great_grandparent ~root x grandparent; *)
-  (*   set_right_child_of x.left parent; *)
-  (*   set_left_child_of x.right grandparent; *)
-  (*   set_left_child_of (Some parent) x; *)
-  (*   set_right_child_of (Some grandparent) x *)
   let right_zig_zag ~(root : t) ~(parent : Cell.t) ~(grandparent : Cell.t)
       (x : Cell.t) : unit =
     update_great_grandparent ~root x grandparent;
@@ -317,17 +308,10 @@ module Make (Ord : OrderedType) = struct
         recurse cell
 
     let only_in_tree_once_ elt cell = only_in_tree_once__ (ref 0) elt cell
-
-    (* let is_balanced_ cell = *)
-    (*   match cell with *)
-    (*   | None -> true *)
-    (*   | Some {key; left; right; _} -> *)
   end
 
   let only_in_tree_once elt tree =
     match !tree with
     | Some root -> Invariants.only_in_tree_once_ elt root
     | None -> true
-
-  (* let is_balanced tree = *)
 end
