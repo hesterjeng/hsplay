@@ -6,7 +6,7 @@
 (authors "John Hester")
 (maintainers "John Hester")
 
-(version 1.5.1)
+(version 1.0.0)
 
 (package
  (name hsplay)
