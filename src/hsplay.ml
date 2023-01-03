@@ -145,50 +145,48 @@ module Make (Ord : OrderedType) = struct
 
   let left_zig_zig ~(root : t) ~(parent : Cell.t) ~(grandparent : Cell.t)
       (x : Cell.t) : unit =
+    update_great_grandparent ~root x grandparent;
     set_left_child_of x.right parent;
     set_right_child_of (Some parent) x;
     set_left_child_of parent.right grandparent;
-    set_right_child_of (Some grandparent) parent;
-    update_great_grandparent ~root x grandparent
+    set_right_child_of (Some grandparent) parent
 
   let right_zig_zig ~(root : t) ~(parent : Cell.t) ~(grandparent : Cell.t)
       (x : Cell.t) : unit =
+    update_great_grandparent ~root x grandparent;
     set_right_child_of x.left parent;
     set_left_child_of (Some parent) x;
     set_right_child_of parent.left grandparent;
-    set_left_child_of (Some grandparent) parent;
-    update_great_grandparent ~root x grandparent
+    set_left_child_of (Some grandparent) parent
 
   let left_zig_zag ~(root : t) ~(parent : Cell.t) ~(grandparent : Cell.t)
       (x : Cell.t) : unit =
+    update_great_grandparent ~root x grandparent;
     set_right_child_of x.left parent;
     set_left_child_of x.right grandparent;
     set_left_child_of (Some parent) x;
-    set_right_child_of (Some grandparent) x;
-    update_great_grandparent ~root x grandparent
+    set_right_child_of (Some grandparent) x
 
+  (* let right_zig_zag ~(root : t) ~(parent : Cell.t) ~(grandparent : Cell.t) *)
+  (*     (x : Cell.t) : unit = *)
+  (*   update_great_grandparent ~root x grandparent; *)
+  (*   set_right_child_of x.left parent; *)
+  (*   set_left_child_of x.right grandparent; *)
+  (*   set_left_child_of (Some parent) x; *)
+  (*   set_right_child_of (Some grandparent) x *)
   let right_zig_zag ~(root : t) ~(parent : Cell.t) ~(grandparent : Cell.t)
       (x : Cell.t) : unit =
-    CCFormat.printf "@[%a@]" pp root;
-    CCFormat.printf "@[1@]@.";
-    set_right_child_of x.left parent;
-    CCFormat.printf "@[2@]@.";
-    set_left_child_of x.right grandparent;
-    CCFormat.printf "@[3@]@.";
-    set_left_child_of (Some parent) x;
-    CCFormat.printf "@[4@]@.";
-    set_right_child_of (Some grandparent) x;
-    CCFormat.printf "@[5@]@.";
     update_great_grandparent ~root x grandparent;
-    CCFormat.printf "@[6@]@."
+    set_left_child_of x.right parent;
+    set_right_child_of x.left grandparent;
+    set_right_child_of (Some parent) x;
+    set_left_child_of (Some grandparent) x
 
   module Splay_result = struct
     type t = Done | Continue [@@deriving show, eq]
   end
 
   let splay_once ~(root : t) (x : Cell.t) : Splay_result.t =
-    let maybe_finished x =
-      if is_root x then Splay_result.Done else Splay_result.Continue in
     CCFormat.printf "@[splay once@]@.";
     match x.parent with
     | None ->
@@ -202,38 +200,40 @@ module Make (Ord : OrderedType) = struct
         CCFormat.printf "@[completed zig@]@.";
         Splay_result.Done
       | Some grandparent ->
+        CCFormat.printf "@[some grandparent in splay once@]@.";
+        CCFormat.printf "@[current tree: %a@]@." pp root;
+        CCFormat.printf "@[ok@]@.";
         if is_left_child_of parent grandparent && is_left_child_of x parent then (
           CCFormat.printf "@[left zig zig@]@.";
           left_zig_zig ~root ~parent ~grandparent x;
-          maybe_finished x
+          Splay_result.Continue
         ) else if
             is_right_child_of parent grandparent && is_right_child_of x parent
           then (
           CCFormat.printf "@[right zig zig@]@.";
           right_zig_zig ~root ~parent ~grandparent x;
-          maybe_finished x
+          Splay_result.Continue
         ) else if
             is_left_child_of parent grandparent && is_right_child_of x parent
           then (
           CCFormat.printf "@[left zig zag@]@.";
           left_zig_zag ~root ~parent ~grandparent x;
-          maybe_finished x
+          Splay_result.Continue
         ) else if
             is_right_child_of parent grandparent && is_left_child_of x parent
           then (
           CCFormat.printf "@[right zig zag@]@.";
           right_zig_zag ~root ~parent ~grandparent x;
-          CCFormat.printf "@[continuing@]@.";
-          maybe_finished x
+          Splay_result.Continue
         ) else
           invalid_arg "cannot splay, malformed tree")
 
-  let splay ~(root : t) (x : Cell.t) =
-    while not @@ Splay_result.equal (splay_once ~root x) Splay_result.Done do
-      CCFormat.printf "@[splaying@]@.";
-      CCFormat.flush CCFormat.stdout ();
-      ()
-    done
+  let rec splay ~(root : t) (x : Cell.t) =
+    match splay_once ~root x with
+    | Splay_result.Done -> ()
+    | Splay_result.Continue ->
+      CCFormat.printf "@[splaying...@]@.";
+      splay ~root x
 
   let rec add_ ~(root : t) (current : Cell.t) (x : elt) : unit =
     CCFormat.printf "@[add %a@]@." Ord.pp x;
