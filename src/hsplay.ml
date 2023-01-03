@@ -67,7 +67,7 @@ module Make (Ord : OrderedType) = struct
   let pp fmt x =
     match !x with
     | Some cell -> CCFormat.fprintf fmt "@[%a@]@." pp_cell cell
-    | None -> CCFormat.fprintf fmt "@[no splay tree@]@."
+    | None -> CCFormat.fprintf fmt "@[empty@]@."
 
   let set_right_child_of (child : Cell.t option) (parent : Cell.t) =
     match child with
@@ -94,8 +94,7 @@ module Make (Ord : OrderedType) = struct
     set_left_child_of x.right parent;
     set_right_child_of (Some parent) x;
     set_root ~root x;
-    CCFormat.printf "@[zig left done@]@.";
-    CCFormat.flush CCFormat.stdout ();
+    (* CCFormat.printf "@[zig left done@]@."; *)
     assert (is_root x)
 
   let zig_right ~(root : t) ~(parent : Cell.t) (x : Cell.t) =
@@ -105,18 +104,15 @@ module Make (Ord : OrderedType) = struct
     set_right_child_of x.left parent;
     set_left_child_of (Some parent) x;
     set_root ~root x;
-    CCFormat.printf "@[zig right done@]@.";
-    CCFormat.flush CCFormat.stdout ();
+    (* CCFormat.printf "@[zig right done@]@."; *)
     assert (is_root x)
 
   let zig ~(root : t) ~(parent : Cell.t) (x : Cell.t) =
     if Cell.equals_opt parent.left (Some x) then (
-      CCFormat.printf "@[zig left@]@.";
-      CCFormat.flush CCFormat.stdout ();
+      (* CCFormat.printf "@[zig left@]@."; *)
       zig_left ~root ~parent x
     ) else if Cell.equals_opt parent.right (Some x) then (
-      CCFormat.printf "@[zig right@]@.";
-      CCFormat.flush CCFormat.stdout ();
+      (* CCFormat.printf "@[zig right@]@."; *)
       zig_right ~root ~parent x
     ) else
       invalid_arg "cannot zig, x is not a child of its parent"
@@ -125,19 +121,19 @@ module Make (Ord : OrderedType) = struct
   let update_great_grandparent ~(root : t) x grandparent =
     match grandparent.parent with
     | None ->
-      CCFormat.printf "@[none in update great grandparent@]@.";
+      (* CCFormat.printf "@[none in update great grandparent@]@."; *)
       x.parent <- None;
       set_root ~root x
     | Some great_grandparent ->
-      CCFormat.printf "@[some in update great grandparent@]@.";
+      (* CCFormat.printf "@[some in update great grandparent@]@."; *)
       if Cell.equals_opt great_grandparent.left (Some grandparent) then (
-        CCFormat.printf "@[grandparent is left of great@]@.";
+        (* CCFormat.printf "@[grandparent is left of great@]@."; *)
         set_left_child_of (Some x) great_grandparent
       ) else if Cell.equals_opt great_grandparent.right (Some grandparent) then (
-        CCFormat.printf "@[grandparent is right of great@]@.";
+        (* CCFormat.printf "@[grandparent is right of great@]@."; *)
         set_right_child_of (Some x) great_grandparent
       ) else (
-        CCFormat.printf "@[could not find grandparent as child of great@]@.";
+        (* CCFormat.printf "@[could not find grandparent as child of great@]@."; *)
         invalid_arg "could not find grandparent as child of great_grandparent"
       )
 
@@ -178,42 +174,41 @@ module Make (Ord : OrderedType) = struct
   end
 
   let splay_once ~(root : t) (x : Cell.t) : Splay_result.t =
-    CCFormat.printf "@[splay once@]@.";
+    (* CCFormat.printf "@[splay once@]@."; *)
     match x.parent with
     | None ->
-      CCFormat.printf "@[done@]@.";
+      (* CCFormat.printf "@[done@]@."; *)
       Splay_result.Done
     | Some parent ->
       (match parent.parent with
       | None ->
-        CCFormat.printf "@[zig in splay once@]@.";
+        (* CCFormat.printf "@[zig in splay once@]@."; *)
         zig ~root ~parent x;
-        CCFormat.printf "@[completed zig@]@.";
         Splay_result.Done
       | Some grandparent ->
-        CCFormat.printf "@[some grandparent in splay once@]@.";
-        CCFormat.printf "@[current tree: %a@]@." pp root;
-        CCFormat.printf "@[ok@]@.";
+        (* CCFormat.printf "@[some grandparent in splay once@]@."; *)
+        (* CCFormat.printf "@[current tree: %a@]@." pp root; *)
+        (* CCFormat.printf "@[ok@]@."; *)
         if is_left_child_of parent grandparent && is_left_child_of x parent then (
-          CCFormat.printf "@[left zig zig@]@.";
+          (* CCFormat.printf "@[left zig zig@]@."; *)
           left_zig_zig ~root ~parent ~grandparent x;
           Splay_result.Continue
         ) else if
             is_right_child_of parent grandparent && is_right_child_of x parent
           then (
-          CCFormat.printf "@[right zig zig@]@.";
+          (* CCFormat.printf "@[right zig zig@]@."; *)
           right_zig_zig ~root ~parent ~grandparent x;
           Splay_result.Continue
         ) else if
             is_left_child_of parent grandparent && is_right_child_of x parent
           then (
-          CCFormat.printf "@[left zig zag@]@.";
+          (* CCFormat.printf "@[left zig zag@]@."; *)
           left_zig_zag ~root ~parent ~grandparent x;
           Splay_result.Continue
         ) else if
             is_right_child_of parent grandparent && is_left_child_of x parent
           then (
-          CCFormat.printf "@[right zig zag@]@.";
+          (* CCFormat.printf "@[right zig zag@]@."; *)
           right_zig_zag ~root ~parent ~grandparent x;
           Splay_result.Continue
         ) else
@@ -223,20 +218,20 @@ module Make (Ord : OrderedType) = struct
     match splay_once ~root x with
     | Splay_result.Done -> ()
     | Splay_result.Continue ->
-      CCFormat.printf "@[splaying...@]@.";
+      (* CCFormat.printf "@[splaying...@]@."; *)
       splay ~root x
 
   let rec add_ ~(root : t) (current : Cell.t) (x : elt) : unit =
-    CCFormat.printf "@[add %a@]@." Ord.pp x;
+    (* CCFormat.printf "@[add %a@]@." Ord.pp x; *)
     let { key; parent; left; right } = current in
     let comparison = Ord.compare x key in
     if CCInt.equal comparison 0 then (
-      CCFormat.printf "@[found inserted key@]@.";
+      (* CCFormat.printf "@[found inserted key@]@."; *)
       splay ~root current
     ) else if comparison < 0 then (
       match left with
       | None ->
-        CCFormat.printf "@[lt none@]@.";
+        (* CCFormat.printf "@[lt none@]@."; *)
         let new_left_child =
           { key = x; parent = Some current; left = None; right = None }
         in
@@ -246,7 +241,7 @@ module Make (Ord : OrderedType) = struct
     ) else if comparison > 0 then (
       match right with
       | None ->
-        CCFormat.printf "@[rt none@]@.";
+        (* CCFormat.printf "@[rt none@]@."; *)
         let new_right_child =
           { key = x; parent = Some current; left = None; right = None }
         in
@@ -256,16 +251,16 @@ module Make (Ord : OrderedType) = struct
     )
 
   let insert (root : t) (x : elt) : unit =
-    CCFormat.printf "@[insert@]@.";
+    (* CCFormat.printf "@[insert@]@."; *)
     match !root with
     | None ->
-      CCFormat.printf "@[insert into empty@]@.";
+      (* CCFormat.printf "@[insert into empty@]@."; *)
       root := Some { key = x; parent = None; left = None; right = None };
       ()
     | Some current -> add_ ~root current x
 
   let rec mem_ ~(root : t) (current : Cell.t) (x : elt) : bool =
-    CCFormat.printf "@[mem@]@.";
+    (* CCFormat.printf "@[mem@]@."; *)
     let { key; left; right; _ } = current in
     let comparison = Ord.compare x key in
     if CCInt.equal comparison 0 then (
