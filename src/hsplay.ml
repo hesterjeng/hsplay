@@ -16,6 +16,7 @@ module type S = sig
   val insert : t -> elt -> unit
   val mem : t -> elt -> bool
   val pp : t CCFormat.printer
+  val only_in_tree_once : elt -> t -> bool
 end
 
 module Make (Ord : OrderedType) = struct
@@ -47,35 +48,6 @@ module Make (Ord : OrderedType) = struct
   open Cell
 
   type t = Cell.t option ref
-
-  module Invariants = struct
-    let rec only_in_tree_once__ count elt cell : bool =
-      let recurse cell =
-        match cell.left, cell.right with
-        | Some left, Some right ->
-          only_in_tree_once__ count elt left
-          && only_in_tree_once__ count elt right
-        | Some left, None -> only_in_tree_once__ count elt left
-        | None, Some right -> only_in_tree_once__ count elt right
-        | None, None -> true
-      in
-      if CCInt.equal (Ord.compare elt cell.key) 0 then
-        if CCInt.equal !count 1 then
-          false
-        else (
-          count := 1;
-          recurse cell
-        )
-      else
-        recurse cell
-
-    let only_in_tree_once_ elt cell = only_in_tree_once__ (ref 0) elt cell
-
-    let only_in_tree_once elt tree =
-      match !tree with
-      | Some root -> only_in_tree_once_ elt root
-      | None -> true
-  end
 
   let equals x y = equals_opt !x !y
   let create () : t = ref None
@@ -181,56 +153,55 @@ module Make (Ord : OrderedType) = struct
     set_right_child_of (Some grandparent) x;
     update_great_grandparent ~root x grandparent
 
-  type splay_result = Done | Continue [@@deriving show]
+  module Splay_result = struct
+    type t = Done | Continue [@@deriving show, eq]
+  end
 
-  let splay_once ~(root : t) (x : Cell.t) : splay_result =
+  let splay_once ~(root : t) (x : Cell.t) : Splay_result.t =
     CCFormat.printf "@[splay once@]@.";
     match x.parent with
     | None ->
       CCFormat.printf "@[done@]@.";
-      Done
+      Splay_result.Done
     | Some parent ->
       (match parent.parent with
       | None ->
         CCFormat.printf "@[zig in splay once@]@.";
         zig ~root ~parent x;
         CCFormat.printf "@[completed zig@]@.";
-        Done
+        Splay_result.Done
       | Some grandparent ->
         if is_left_child_of parent grandparent && is_left_child_of x parent then (
           CCFormat.printf "@[left zig zig@]@.";
           left_zig_zig ~root ~parent ~grandparent x;
-          Continue
+          Splay_result.Continue
         ) else if
             is_right_child_of parent grandparent && is_right_child_of x parent
           then (
           CCFormat.printf "@[right zig zig@]@.";
           right_zig_zig ~root ~parent ~grandparent x;
-          Continue
+          Splay_result.Continue
         ) else if
             is_left_child_of parent grandparent && is_right_child_of x parent
           then (
           CCFormat.printf "@[left zig zag@]@.";
           left_zig_zag ~root ~parent ~grandparent x;
-          Continue
+          Splay_result.Continue
         ) else if
             is_right_child_of parent grandparent && is_left_child_of x parent
           then (
           CCFormat.printf "@[right zig zag@]@.";
           right_zig_zag ~root ~parent ~grandparent x;
-          Continue
+          Splay_result.Continue
         ) else
           invalid_arg "cannot splay, malformed tree")
 
   let splay ~(root : t) (x : Cell.t) =
-    (* while splay_once ~root x <> Done do *)
-    (*   CCFormat.printf "@[splaying@]@."; *)
-    (*   CCFormat.flush CCFormat.stdout (); *)
-    (*   () *)
-    (* done *)
-    let res = splay_once ~root x in
-    CCFormat.printf "@[splay result: %a@]@." pp_splay_result res;
-    ()
+    while not @@ Splay_result.equal (splay_once ~root x) Splay_result.Done do
+      CCFormat.printf "@[splaying@]@.";
+      CCFormat.flush CCFormat.stdout ();
+      ()
+    done
 
   let rec add_ ~(root : t) (current : Cell.t) (x : elt) : unit =
     CCFormat.printf "@[add@]@.";
@@ -301,4 +272,33 @@ module Make (Ord : OrderedType) = struct
     match !x with
     | Some cell -> CCFormat.fprintf fmt "@[%a@]@." pp_cell cell
     | None -> CCFormat.fprintf fmt "@[no splay tree@]@."
+
+  module Invariants = struct
+    let rec only_in_tree_once__ count elt cell : bool =
+      let recurse cell =
+        match cell.left, cell.right with
+        | Some left, Some right ->
+          only_in_tree_once__ count elt left
+          && only_in_tree_once__ count elt right
+        | Some left, None -> only_in_tree_once__ count elt left
+        | None, Some right -> only_in_tree_once__ count elt right
+        | None, None -> true
+      in
+      if CCInt.equal (Ord.compare elt cell.key) 0 then
+        if CCInt.equal !count 1 then
+          false
+        else (
+          count := 1;
+          recurse cell
+        )
+      else
+        recurse cell
+
+    let only_in_tree_once_ elt cell = only_in_tree_once__ (ref 0) elt cell
+  end
+
+  let only_in_tree_once elt tree =
+    match !tree with
+    | Some root -> Invariants.only_in_tree_once_ elt root
+    | None -> true
 end

@@ -17,6 +17,7 @@ module type S = sig
   val insert : t -> elt -> unit
   val mem : t -> elt -> bool
   val pp : t CCFormat.printer
+  val only_in_tree_once : elt -> t -> bool
 end
 
 module Make (Ord : OrderedType) : S with type elt = Ord.t
